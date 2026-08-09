@@ -24,3 +24,6 @@ Next.js (App Router) + Tailwind + Supabase (Postgres, Auth).
 ## Planned
 - AI-assisted essay feedback/rewrite suggestions and school recommendations based on stats (`ai_feedback` column and stats page already stubbed).
 - Email alerts (`email_alerts` table already in schema) for secondary deadlines, letter of recommendation reminders, and interview prep — needs a scheduled job (e.g. Supabase Edge Function on a cron trigger) to send via an email provider.
+
+## Demo User
+Email : 

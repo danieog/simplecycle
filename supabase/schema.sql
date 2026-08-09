@@ -4,23 +4,48 @@
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
-  mcat_score int,
-  gpa numeric(3,2),
   created_at timestamptz not null default now()
+);
+
+create table if not exists public.cycles (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  application_type text check (application_type in ('medical','law','graduate_masters','graduate_doctorate')),
+  cycle_year text not null,
+  cycle_start_date date not null,
+  gpa numeric(3,2),
+  major_gpa numeric(3,2),
+  gpa_scale numeric(2,1) check (gpa_scale in (4.0, 5.0)),
+  created_at timestamptz not null default now(),
+  constraint gpa_within_scale check (gpa is null or gpa_scale is null or gpa <= gpa_scale),
+  constraint major_gpa_within_scale check (major_gpa is null or gpa_scale is null or major_gpa <= gpa_scale)
 );
 
 create table if not exists public.exam_scores (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
+  cycle_id uuid not null references public.cycles(id) on delete cascade,
   exam_name text not null, -- e.g. MCAT, CASPer
   score text not null,
   date_taken date,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint exam_score_within_range check (
+    exam_name not in ('MCAT','LSAT','GRE')
+    or (
+      score ~ '^\d+$'
+      and (
+        (exam_name = 'MCAT' and score::int between 472 and 528)
+        or (exam_name = 'LSAT' and score::int between 120 and 180)
+        or (exam_name = 'GRE' and score::int between 260 and 340)
+      )
+    )
+  )
 );
 
 create table if not exists public.schools (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
+  cycle_id uuid not null references public.cycles(id) on delete cascade,
   name text not null,
   city text,
   state text,
@@ -86,6 +111,7 @@ create table if not exists public.email_alerts (
 
 -- Row Level Security: every user can only see/edit their own rows.
 alter table public.profiles enable row level security;
+alter table public.cycles enable row level security;
 alter table public.exam_scores enable row level security;
 alter table public.schools enable row level security;
 alter table public.secondaries enable row level security;
@@ -95,6 +121,9 @@ alter table public.email_alerts enable row level security;
 
 create policy "profiles: owner access" on public.profiles
   for all using (auth.uid() = id) with check (auth.uid() = id);
+
+create policy "cycles: owner access" on public.cycles
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 create policy "exam_scores: owner access" on public.exam_scores
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
@@ -114,12 +143,43 @@ create policy "interviews: owner access" on public.interviews
 create policy "email_alerts: owner access" on public.email_alerts
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
--- Auto-create a profile row when a new user signs up.
+-- Auto-create a profile row and first cycle when a new user signs up.
 create or replace function public.handle_new_user()
 returns trigger as $$
+declare
+  new_cycle_id uuid;
+  cycle_year_value text;
+  cycle_start_year int;
 begin
   insert into public.profiles (id, full_name)
   values (new.id, new.raw_user_meta_data->>'full_name');
+
+  cycle_year_value := coalesce(nullif(new.raw_user_meta_data->>'cycle_year', ''), to_char(now(), 'YYYY') || '-' || to_char(now() + interval '1 year', 'YYYY'));
+  cycle_start_year := split_part(cycle_year_value, '-', 1)::int;
+
+  insert into public.cycles (user_id, application_type, cycle_year, cycle_start_date, gpa, major_gpa, gpa_scale)
+  values (
+    new.id,
+    new.raw_user_meta_data->>'application_type',
+    cycle_year_value,
+    make_date(cycle_start_year, 8, 1),
+    nullif(new.raw_user_meta_data->>'gpa', '')::numeric(3,2),
+    nullif(new.raw_user_meta_data->>'major_gpa', '')::numeric(3,2),
+    nullif(new.raw_user_meta_data->>'gpa_scale', '')::numeric(2,1)
+  )
+  returning id into new_cycle_id;
+
+  if nullif(new.raw_user_meta_data->>'exam_name', '') is not null
+     and nullif(new.raw_user_meta_data->>'exam_score', '') is not null then
+    insert into public.exam_scores (user_id, cycle_id, exam_name, score)
+    values (
+      new.id,
+      new_cycle_id,
+      new.raw_user_meta_data->>'exam_name',
+      new.raw_user_meta_data->>'exam_score'
+    );
+  end if;
+
   return new;
 end;
 $$ language plpgsql security definer;

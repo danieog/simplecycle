@@ -1,8 +1,24 @@
+export type ApplicationType =
+  | "medical"
+  | "law"
+  | "graduate_masters"
+  | "graduate_doctorate";
+
 export interface Profile {
   id: string;
   full_name: string | null;
-  mcat_score: number | null;
+  created_at: string;
+}
+
+export interface Cycle {
+  id: string;
+  user_id: string;
+  application_type: ApplicationType | null;
+  cycle_year: string;
+  cycle_start_date: string;
   gpa: number | null;
+  major_gpa: number | null;
+  gpa_scale: number | null;
   created_at: string;
 }
 
@@ -21,6 +37,7 @@ export type Residency = "in_state" | "out_state" | "unknown";
 export interface School {
   id: string;
   user_id: string;
+  cycle_id: string;
   name: string;
   city: string | null;
   state: string | null;
@@ -53,6 +70,7 @@ export interface Secondary {
 export interface ExamScore {
   id: string;
   user_id: string;
+  cycle_id: string;
   exam_name: string;
   score: string;
   date_taken: string | null;

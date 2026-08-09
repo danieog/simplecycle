@@ -1,14 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveCycle } from "@/lib/cycles";
+import type { Cycle } from "@/lib/types";
 import LogoutButton from "@/components/logout-button";
-
-const navItems = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/dashboard/schools", label: "Schools" },
-  { href: "/dashboard/stats", label: "Stats" },
-  { href: "/dashboard/profile", label: "Profile" },
-];
+import CycleSwitcher from "@/components/cycle-switcher";
+import DashboardNav from "@/components/dashboard-nav";
 
 export default async function DashboardLayout({
   children,
@@ -24,6 +21,15 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  const { data: cyclesData } = await supabase
+    .from("cycles")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("cycle_start_date", { ascending: true });
+
+  const cycles = (cyclesData ?? []) as Cycle[];
+  const defaultCycle = getActiveCycle(cycles);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
@@ -32,19 +38,14 @@ export default async function DashboardLayout({
             <Link href="/dashboard" className="text-lg font-semibold text-slate-900">
               simplecycle
             </Link>
-            <nav className="flex gap-4">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="text-sm font-medium text-slate-600 hover:text-slate-900"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
+            <DashboardNav defaultCycleId={defaultCycle?.id} />
           </div>
-          <LogoutButton />
+          <div className="flex items-center gap-3">
+            {cycles.length > 0 && defaultCycle && (
+              <CycleSwitcher cycles={cycles} defaultCycleId={defaultCycle.id} />
+            )}
+            <LogoutButton />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>

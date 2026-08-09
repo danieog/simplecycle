@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
+import { resolveCycle } from "@/lib/cycles";
 import type { ExamScore } from "@/lib/types";
 import AddExamForm from "@/components/add-exam-form";
+import CycleStatsForm from "@/components/cycle-stats-form";
 
 // Rough national averages for context; not medical/admissions advice.
 const NATIONAL_AVERAGES: Record<string, string> = {
@@ -8,12 +10,26 @@ const NATIONAL_AVERAGES: Record<string, string> = {
   CASPer: "N/A",
 };
 
-export default async function StatsPage() {
+export default async function StatsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cycle?: string }>;
+}) {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("exam_scores")
-    .select("*")
-    .order("date_taken", { ascending: false });
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { cycle: requestedCycleId } = await searchParams;
+  const activeCycle = await resolveCycle(supabase, user!.id, requestedCycleId);
+
+  const { data } = activeCycle
+    ? await supabase
+        .from("exam_scores")
+        .select("*")
+        .eq("cycle_id", activeCycle.id)
+        .order("date_taken", { ascending: false })
+    : { data: [] };
 
   const exams = (data ?? []) as ExamScore[];
 
@@ -26,43 +42,51 @@ export default async function StatsPage() {
         </p>
       </div>
 
-      <AddExamForm />
-
-      {exams.length === 0 ? (
-        <p className="text-sm text-slate-500">No scores logged yet.</p>
+      {!activeCycle ? (
+        <p className="text-sm text-slate-500">Add a cycle first to start tracking stats.</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-4 py-2 text-left font-medium text-slate-600">Exam</th>
-                <th className="px-4 py-2 text-left font-medium text-slate-600">Your score</th>
-                <th className="px-4 py-2 text-left font-medium text-slate-600">National avg</th>
-                <th className="px-4 py-2 text-left font-medium text-slate-600">Date taken</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {exams.map((exam) => (
-                <tr key={exam.id}>
-                  <td className="px-4 py-2 font-medium text-slate-900">{exam.exam_name}</td>
-                  <td className="px-4 py-2 text-slate-600">{exam.score}</td>
-                  <td className="px-4 py-2 text-slate-600">
-                    {NATIONAL_AVERAGES[exam.exam_name] ?? "—"}
-                  </td>
-                  <td className="px-4 py-2 text-slate-600">{exam.date_taken ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        <>
+          <CycleStatsForm cycle={activeCycle} />
 
-      <section className="rounded-lg border border-dashed border-slate-300 bg-white p-4">
-        <h2 className="text-lg font-medium text-slate-900">School recommendations</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Personalized school recommendations based on your stats are coming soon.
-        </p>
-      </section>
+          <AddExamForm cycleId={activeCycle.id} />
+
+          {exams.length === 0 ? (
+            <p className="text-sm text-slate-500">No scores logged yet.</p>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left font-medium text-slate-600">Exam</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-600">Your score</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-600">National avg</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-600">Date taken</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {exams.map((exam) => (
+                    <tr key={exam.id}>
+                      <td className="px-4 py-2 font-medium text-slate-900">{exam.exam_name}</td>
+                      <td className="px-4 py-2 text-slate-600">{exam.score}</td>
+                      <td className="px-4 py-2 text-slate-600">
+                        {NATIONAL_AVERAGES[exam.exam_name] ?? "—"}
+                      </td>
+                      <td className="px-4 py-2 text-slate-600">{exam.date_taken ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <section className="rounded-lg border border-dashed border-slate-300 bg-white p-4">
+            <h2 className="text-lg font-medium text-slate-900">School recommendations</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Personalized school recommendations based on your stats are coming soon.
+            </p>
+          </section>
+        </>
+      )}
     </div>
   );
 }

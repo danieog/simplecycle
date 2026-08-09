@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { resolveCycle } from "@/lib/cycles";
 import type { School } from "@/lib/types";
 import AddSchoolForm from "@/components/add-school-form";
 
@@ -14,12 +15,26 @@ const statusColors: Record<string, string> = {
   withdrawn: "bg-slate-100 text-slate-500",
 };
 
-export default async function SchoolsPage() {
+export default async function SchoolsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cycle?: string }>;
+}) {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("schools")
-    .select("*")
-    .order("user_ranking", { ascending: true, nullsFirst: false });
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { cycle: requestedCycleId } = await searchParams;
+  const activeCycle = await resolveCycle(supabase, user!.id, requestedCycleId);
+
+  const { data } = activeCycle
+    ? await supabase
+        .from("schools")
+        .select("*")
+        .eq("cycle_id", activeCycle.id)
+        .order("user_ranking", { ascending: true, nullsFirst: false })
+    : { data: [] };
 
   const schools = (data ?? []) as School[];
 
@@ -32,7 +47,13 @@ export default async function SchoolsPage() {
         </p>
       </div>
 
-      <AddSchoolForm />
+      {activeCycle ? (
+        <AddSchoolForm cycleId={activeCycle.id} />
+      ) : (
+        <p className="text-sm text-slate-500">
+          Add a cycle first to start tracking schools.
+        </p>
+      )}
 
       {schools.length === 0 ? (
         <p className="text-sm text-slate-500">No schools added yet.</p>

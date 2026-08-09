@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { isPasswordStrong, passwordRequirements } from "@/lib/password";
 import type { ApplicationType } from "@/lib/types";
 
 const examNameByType: Record<"medical" | "law" | "graduate", string> = {
@@ -27,14 +26,10 @@ const cycleYearOptions = Array.from(
   (_, i) => CYCLE_START_YEAR + i
 ).map((y) => `${y}-${y + 1}`);
 
-export default function SignupPage() {
+export default function AddCycleForm() {
+  const router = useRouter();
   const supabase = createClient();
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [applyingTo, setApplyingTo] = useState<"medical" | "law" | "graduate" | "">("");
   const [graduateLevel, setGraduateLevel] = useState<"masters" | "doctorate" | "">("");
   const [examScore, setExamScore] = useState("");
@@ -44,24 +39,10 @@ export default function SignupPage() {
   const [cycleYear, setCycleYear] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-
-  const passwordsMatch = password.length > 0 && password === confirmPassword;
-  const passwordStrong = isPasswordStrong(password);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-
-    if (!passwordStrong) {
-      setError("Password does not meet the security requirements below.");
-      return;
-    }
-
-    if (!passwordsMatch) {
-      setError("Passwords do not match.");
-      return;
-    }
 
     if (!applyingTo) {
       setError("Please select what you're applying to.");
@@ -70,6 +51,11 @@ export default function SignupPage() {
 
     if (applyingTo === "graduate" && !graduateLevel) {
       setError("Please select a graduate program level.");
+      return;
+    }
+
+    if (!cycleYear) {
+      setError("Please select an application cycle.");
       return;
     }
 
@@ -116,60 +102,55 @@ export default function SignupPage() {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: {
-          full_name: fullName,
-          application_type: applicationType,
-          gpa: gpa || undefined,
-          gpa_scale: gpa || majorGpa ? gpaScale : undefined,
-          major_gpa: majorGpa || undefined,
-          cycle_year: cycleYear || undefined,
-          exam_name: examScore ? examNameByType[applyingTo as "medical" | "law" | "graduate"] : undefined,
-          exam_score: examScore || undefined,
-        },
-      },
-    });
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (error) {
-      console.error("Signup failed:", error);
-      setError(error.message || `Signup failed (${error.status ?? "unknown"}). Check the console for details.`);
+    if (!user) {
+      setError("Not signed in.");
       setLoading(false);
       return;
     }
 
-    setSuccess(true);
-    setLoading(false);
-  }
+    const cycleStartYear = Number(cycleYear.split("-")[0]);
+    const cycleStartDate = `${cycleStartYear}-08-01`;
 
-  if (success) {
-    return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm">
-        <p className="text-sm text-slate-700">
-          Check your email to confirm your account, then log in.
-        </p>
-        <Link href="/login" className="mt-4 inline-block text-sm font-medium text-slate-900 underline">
-          Go to login
-        </Link>
-      </div>
-    );
+    const { data: cycle, error: cycleError } = await supabase
+      .from("cycles")
+      .insert({
+        user_id: user.id,
+        application_type: applicationType,
+        cycle_year: cycleYear,
+        cycle_start_date: cycleStartDate,
+        gpa: gpa || null,
+        gpa_scale: gpa || majorGpa ? gpaScale : null,
+        major_gpa: majorGpa || null,
+      })
+      .select()
+      .single();
+
+    if (cycleError || !cycle) {
+      setError(cycleError?.message ?? "Failed to create cycle.");
+      setLoading(false);
+      return;
+    }
+
+    if (examScore) {
+      await supabase.from("exam_scores").insert({
+        user_id: user.id,
+        cycle_id: cycle.id,
+        exam_name: examNameByType[applyingTo as "medical" | "law" | "graduate"],
+        score: examScore,
+      });
+    }
+
+    setLoading(false);
+    router.push(`/dashboard?cycle=${cycle.id}`);
+    router.refresh();
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <div>
-        <label className="block text-sm font-medium text-slate-700">Full name</label>
-        <input
-          type="text"
-          required
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-        />
-      </div>
       <div>
         <label className="block text-sm font-medium text-slate-700">
           What are you applying to? <span className="text-red-600">*</span>
@@ -278,14 +259,17 @@ export default function SignupPage() {
       </div>
       <div>
         <label className="block text-sm font-medium text-slate-700">
-          Application cycle
+          Application cycle <span className="text-red-600">*</span>
         </label>
         <select
+          required
           value={cycleYear}
           onChange={(e) => setCycleYear(e.target.value)}
           className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
         >
-          <option value="">Optional</option>
+          <option value="" disabled>
+            Select an option
+          </option>
           {cycleYearOptions.map((y) => (
             <option key={y} value={y}>
               {y}
@@ -293,91 +277,16 @@ export default function SignupPage() {
           ))}
         </select>
       </div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700">
-          Email <span className="text-red-600">*</span>
-        </label>
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700">Password</label>
-        <div className="relative mt-1">
-          <input
-            type={showPassword ? "text" : "password"}
-            required
-            minLength={12}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 pr-16 text-sm focus:border-slate-500 focus:outline-none"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            className="absolute inset-y-0 right-0 px-3 text-xs font-medium text-slate-500 hover:text-slate-900"
-          >
-            {showPassword ? "Hide" : "Show"}
-          </button>
-        </div>
-        <ul className="mt-2 space-y-1">
-          {passwordRequirements.map((req) => {
-            const met = req.test(password);
-            return (
-              <li
-                key={req.label}
-                className={`flex items-center gap-1.5 text-xs ${
-                  met ? "text-green-600" : "text-slate-400"
-                }`}
-              >
-                <span>{met ? "✓" : "○"}</span>
-                {req.label}
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700">Confirm password</label>
-        <div className="relative mt-1">
-          <input
-            type={showConfirmPassword ? "text" : "password"}
-            required
-            minLength={12}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 pr-16 text-sm focus:border-slate-500 focus:outline-none"
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword((v) => !v)}
-            className="absolute inset-y-0 right-0 px-3 text-xs font-medium text-slate-500 hover:text-slate-900"
-          >
-            {showConfirmPassword ? "Hide" : "Show"}
-          </button>
-        </div>
-        {confirmPassword.length > 0 && !passwordsMatch && (
-          <p className="mt-1 text-xs text-red-600">Passwords do not match.</p>
-        )}
-      </div>
+
       {error && <p className="text-sm text-red-600">{error}</p>}
+
       <button
         type="submit"
         disabled={loading}
         className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
       >
-        {loading ? "Creating account..." : "Sign up"}
+        {loading ? "Creating cycle..." : "Create cycle"}
       </button>
-      <p className="text-center text-sm text-slate-500">
-        Already have an account?{" "}
-        <Link href="/login" className="font-medium text-slate-900 underline">
-          Log in
-        </Link>
-      </p>
     </form>
   );
 }

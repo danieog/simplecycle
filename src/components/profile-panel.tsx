@@ -16,8 +16,6 @@ export default function ProfilePanel({
   const supabase = createClient();
 
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
-  const [mcatScore, setMcatScore] = useState(profile?.mcat_score?.toString() ?? "");
-  const [gpa, setGpa] = useState(profile?.gpa?.toString() ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,8 +39,6 @@ export default function ProfilePanel({
       .from("profiles")
       .update({
         full_name: fullName || null,
-        mcat_score: mcatScore ? Number(mcatScore) : null,
-        gpa: gpa ? Number(gpa) : null,
       })
       .eq("id", user!.id);
 
@@ -101,29 +97,6 @@ export default function ProfilePanel({
             onChange={(e) => setFullName(e.target.value)}
             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
           />
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium text-slate-700">MCAT score</label>
-            <input
-              type="number"
-              value={mcatScore}
-              onChange={(e) => setMcatScore(e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700">GPA</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              max="4"
-              value={gpa}
-              onChange={(e) => setGpa(e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-            />
-          </div>
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         {saved && !error && <p className="text-sm text-green-600">Profile saved.</p>}

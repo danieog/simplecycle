@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function AddExamForm() {
+export default function AddExamForm({ cycleId }: { cycleId: string }) {
   const router = useRouter();
   const supabase = createClient();
   const [open, setOpen] = useState(false);
@@ -23,6 +23,7 @@ export default function AddExamForm() {
 
     await supabase.from("exam_scores").insert({
       user_id: user!.id,
+      cycle_id: cycleId,
       exam_name: examName,
       score,
       date_taken: dateTaken || null,

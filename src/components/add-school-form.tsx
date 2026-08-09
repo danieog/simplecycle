@@ -16,7 +16,7 @@ const statuses: SchoolStatus[] = [
   "withdrawn",
 ];
 
-export default function AddSchoolForm() {
+export default function AddSchoolForm({ cycleId }: { cycleId: string }) {
   const router = useRouter();
   const supabase = createClient();
   const [open, setOpen] = useState(false);
@@ -50,6 +50,7 @@ export default function AddSchoolForm() {
 
     const { error } = await supabase.from("schools").insert({
       user_id: user.id,
+      cycle_id: cycleId,
       name,
       city: city || null,
       state: state || null,
