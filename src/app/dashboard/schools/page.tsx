@@ -65,7 +65,8 @@ export default async function SchoolsPage({
                 <th className="px-4 py-2 text-left font-medium text-slate-600">School</th>
                 <th className="px-4 py-2 text-left font-medium text-slate-600">Location</th>
                 <th className="px-4 py-2 text-left font-medium text-slate-600">Tuition</th>
-                <th className="px-4 py-2 text-left font-medium text-slate-600">Nat'l Rank</th>
+                <th className="px-4 py-2 text-left font-medium text-slate-600">Combined Degree</th>
+                <th className="px-4 py-2 text-left font-medium text-slate-600">SimpleCycle Rank</th>
                 <th className="px-4 py-2 text-left font-medium text-slate-600">Your Rank</th>
                 <th className="px-4 py-2 text-left font-medium text-slate-600">Status</th>
               </tr>
@@ -90,6 +91,9 @@ export default async function SchoolsPage({
                       : school.out_state_tuition
                       ? `$${school.out_state_tuition.toLocaleString()}`
                       : "—"}
+                  </td>
+                  <td className="px-4 py-2 text-slate-600">
+                    {school.combined_program || "—"}
                   </td>
                   <td className="px-4 py-2 text-slate-600">{school.national_ranking ?? "—"}</td>
                   <td className="px-4 py-2 text-slate-600">{school.user_ranking ?? "—"}</td>

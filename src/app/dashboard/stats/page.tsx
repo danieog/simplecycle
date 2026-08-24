@@ -3,12 +3,7 @@ import { resolveCycle } from "@/lib/cycles";
 import type { ExamScore } from "@/lib/types";
 import AddExamForm from "@/components/add-exam-form";
 import CycleStatsForm from "@/components/cycle-stats-form";
-
-// Rough national averages for context; not medical/admissions advice.
-const NATIONAL_AVERAGES: Record<string, string> = {
-  MCAT: "506",
-  CASPer: "N/A",
-};
+import ExamScoreRow from "@/components/exam-score-row";
 
 export default async function StatsPage({
   searchParams,
@@ -38,7 +33,7 @@ export default async function StatsPage({
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Stats</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Your exam scores and how they compare to national figures.
+          Track your exam scores and the dates you took them.
         </p>
       </div>
 
@@ -59,20 +54,13 @@ export default async function StatsPage({
                   <tr>
                     <th className="px-4 py-2 text-left font-medium text-slate-600">Exam</th>
                     <th className="px-4 py-2 text-left font-medium text-slate-600">Your score</th>
-                    <th className="px-4 py-2 text-left font-medium text-slate-600">National avg</th>
                     <th className="px-4 py-2 text-left font-medium text-slate-600">Date taken</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-600"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {exams.map((exam) => (
-                    <tr key={exam.id}>
-                      <td className="px-4 py-2 font-medium text-slate-900">{exam.exam_name}</td>
-                      <td className="px-4 py-2 text-slate-600">{exam.score}</td>
-                      <td className="px-4 py-2 text-slate-600">
-                        {NATIONAL_AVERAGES[exam.exam_name] ?? "—"}
-                      </td>
-                      <td className="px-4 py-2 text-slate-600">{exam.date_taken ?? "—"}</td>
-                    </tr>
+                    <ExamScoreRow key={exam.id} exam={exam} />
                   ))}
                 </tbody>
               </table>

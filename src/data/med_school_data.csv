@@ -1,0 +1,32 @@
+med_school_name,city,state,mcat_score_median,gpa_median,in_state_cost_usd,out_state_cost_usd,combo_degrees,first_year_class
+Meharry Medical College,Nashville,TN,506,3.64,59250,59250,"[md/phd, md/mph]",115
+Howard University,Washington,DC,507,3.73,60924,60924,"[bs/md, md/phd, md/mba]",128
+Morehouse School of Medicine,Atlanta,GA,508,3.77,57238,57238,"[md/mba, md/phd, md/mph]",110
+Rush Medical College of Rush Univeristy Medical Center,Chicago,IL,510,3.8,59222,59222,[],144
+Wake Forest University School of Medicine,,NC,512,3.87,66895,66895,[],194
+State University of New York Upstate Medical University - Alan Norton College of Medicine,Syracuse,NY,512,3.84,48071,72791,"[md/mph, md/mba, md/phd, bs/md, three_yr_md]",182
+Drexel University - College of Medicine,Philadelphia,PA,512,3.84,76245,76245,"[md/mba, md/mph, bs/md, md/phd]",305
+Belmont University - Thomas F. Frist Jr. College of Medicine,Nashville,TN,512,3.84,69602,69602,[],54
+"Loyola University Chicago - Stritch School of Medicine
+",Maywood,IL,513,3.87,72844,72844,[md/mph],175
+Albany Medical College,Albany,NY,513,3.87,60051,60051,"[md/phd, bs/md, md/mph, md/mba]",141
+Penn State University - College of Medicine,Hershey,PA,513,3.88,61354,68558,"[md/mba, md/phd, md/mph, three_yr_md]",150
+Texas Christian University - Anne Burnett Marion School of Medicine,Fort Worth,TX,513,3.88,72270,72270,"[md/phd, md/mph]",60
+Old Dominion University - Macon & Joan Brock Virginia Health Sciences Eastern Virginia Medical School,Norfolk,VA,513,3.82,40302,62628,[three_yr_md],151
+Virgnia Tech - Carilion School of Medicine,Roanoke,VA,513,3.82,63779,63779,"[md/mph, md/mba, md/phd]",55
+"University of Vermont - Robert Larner, M.D., College of Medicine",Burlington,VT,513,3.8,41736,72402,[],122
+"University of Maryland, Baltimore - School of Medicine",Baltimore,MD,514,3.9,46015,78339,"[bs/md, md/mba, md/mpp, md/mph, md/mphd]",171
+Rutgers New Jersey Medical School,,NJ,514,3.89,49708,78184,"[md/mph, md/mba, bs/md, md/phd, three_yr_md]",174
+Thomas Jefferson University - Sidney Kimmel Medical College,Philadelphia,PA,514,3.89,70292,70292,"[md/phd, md/mph, bs/md]",
+Virginia Commonwealth University - School of Medicine,Richmond,VA,514,3.9,41660,67318,"[md/mph, bs/md, md/phd]",184
+"University of California, San Francisco (UCSF) - School of Medicine",San Francisco,CA,517,3.93,42540,54785,"[bs/md, md/phd]",177
+Albert Einstein College of Medicine,Bronx,NY,519,3.93,77232,77232,"[md/phd, md/mph]",148
+Stanford University - School of Medicine,Stanford,CA,520,3.96,70915,70915,"[md/jd, md/mph, md/mba, md/phd]",90
+Duke University - School of Medicine,Durham,NC,520,3.95,74690,74690,"[md/mba, md/mpp, md/phd, md/jd, md/mph]",123
+Harvard Medical School,Boston,MA,521,3.98,76421,76421,"[md/mpp, md/mba, md/mphd, md/mph]",165
+Washington University in St. Louis - School of Medicine,Saint Louis,MO,521,3.96,69468,69468,"[md/phd, md/mph, md/mba]",123
+Johns Hopkins University - School of Medicine,Baltimore,MD,522,3.97,68878,68878,"[md/mba, md/phd]",118
+Columbia University - Vagelos College of Physicians and Surgeons,New York,NY,522,3.97,77585,77585,"[md/mph, three_yr_md]",138
+University of Pennsylvania - Perelman School of Medicine,Philadelphia,PA,522,3.98,77491,77491,"[md/mba, md/jd, md/mph, md/phd]",153
+Vanderbilt University - School of Medicine,Nashville,TN,522,3.97,72803,72803,"[md/phd, md/mph, md/mba, md/jd]",95
+New York University (NYU) - Grossman School of Medicine,New York,NY,523,3.99,4350,4350,"[md/mba, md/mph, three_yr_md]",99

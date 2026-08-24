@@ -99,3 +99,11 @@ export interface EssayPrompt {
   ai_feedback: string | null;
   created_at: string;
 }
+
+export interface SchoolRequest {
+  id: string;
+  user_id: string;
+  requested_name: string;
+  notes: string | null;
+  created_at: string;
+}

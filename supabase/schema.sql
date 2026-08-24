@@ -98,6 +98,14 @@ create table if not exists public.interviews (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.school_requests (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  requested_name text not null,
+  notes text,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.email_alerts (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -117,6 +125,7 @@ alter table public.schools enable row level security;
 alter table public.secondaries enable row level security;
 alter table public.essay_prompts enable row level security;
 alter table public.interviews enable row level security;
+alter table public.school_requests enable row level security;
 alter table public.email_alerts enable row level security;
 
 create policy "profiles: owner access" on public.profiles
@@ -141,6 +150,9 @@ create policy "interviews: owner access" on public.interviews
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 create policy "email_alerts: owner access" on public.email_alerts
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "school_requests: owner access" on public.school_requests
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Auto-create a profile row and first cycle when a new user signs up.

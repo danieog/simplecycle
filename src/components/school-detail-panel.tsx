@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { School, Secondary, Interview, EssayPrompt } from "@/lib/types";
+import { findMedSchool } from "@/lib/med-schools";
 
 function addDays(dateStr: string, days: number) {
   const d = new Date(dateStr);
@@ -24,12 +25,16 @@ export default function SchoolDetailPanel({
 }) {
   const router = useRouter();
   const supabase = createClient();
+  const reference = findMedSchool(school.name);
 
   const [pros, setPros] = useState(school.pros ?? "");
   const [cons, setCons] = useState(school.cons ?? "");
   const [alignment, setAlignment] = useState(school.alignment_notes ?? "");
   const [clubs, setClubs] = useState(school.clubs_of_interest ?? "");
   const [savingNotes, setSavingNotes] = useState(false);
+
+  const [combinedProgram, setCombinedProgram] = useState(school.combined_program ?? "");
+  const [savingCombinedProgram, setSavingCombinedProgram] = useState(false);
 
   const [secReceived, setSecReceived] = useState(secondary?.received ?? false);
   const [secDateReceived, setSecDateReceived] = useState(secondary?.date_received ?? "");
@@ -43,6 +48,16 @@ export default function SchoolDetailPanel({
 
   const [newPrompt, setNewPrompt] = useState("");
   const [savingEssay, setSavingEssay] = useState(false);
+
+  async function saveCombinedProgram() {
+    setSavingCombinedProgram(true);
+    await supabase
+      .from("schools")
+      .update({ combined_program: combinedProgram || null })
+      .eq("id", school.id);
+    setSavingCombinedProgram(false);
+    router.refresh();
+  }
 
   async function saveNotes() {
     setSavingNotes(true);
@@ -127,6 +142,77 @@ export default function SchoolDetailPanel({
           {[school.city, school.state].filter(Boolean).join(", ")}
         </p>
       </div>
+
+      {reference && (
+        <section className="rounded-lg border border-slate-200 bg-white p-4">
+          <h2 className="text-lg font-medium text-slate-900">Reference stats</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Matriculant medians from the most recent applicant cycle.
+          </p>
+          <dl className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div>
+              <dt className="text-xs font-medium text-slate-500">MCAT median</dt>
+              <dd className="text-sm text-slate-900">{reference.mcatMedian ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium text-slate-500">GPA median</dt>
+              <dd className="text-sm text-slate-900">{reference.gpaMedian ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium text-slate-500">First-year class size</dt>
+              <dd className="text-sm text-slate-900">{reference.firstYearClassSize ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium text-slate-500">Combo degrees</dt>
+              <dd className="text-sm text-slate-900">
+                {reference.comboDegrees.length > 0
+                  ? reference.comboDegrees.join(", ")
+                  : "—"}
+              </dd>
+            </div>
+          </dl>
+        </section>
+      )}
+
+      <section className="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 className="text-lg font-medium text-slate-900">Combined degree</h2>
+        <div className="mt-3 flex flex-wrap items-end gap-3">
+          <div className="min-w-[12rem]">
+            <label className="block text-sm font-medium text-slate-700">Program</label>
+            {reference && reference.comboDegrees.length > 0 ? (
+              <select
+                value={combinedProgram}
+                onChange={(e) => setCombinedProgram(e.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+              >
+                <option value="">None</option>
+                {reference.comboDegrees.map((degree) => (
+                  <option key={degree} value={degree}>
+                    {degree}
+                  </option>
+                ))}
+                {combinedProgram && !reference.comboDegrees.includes(combinedProgram) && (
+                  <option value={combinedProgram}>{combinedProgram}</option>
+                )}
+              </select>
+            ) : (
+              <input
+                value={combinedProgram}
+                onChange={(e) => setCombinedProgram(e.target.value)}
+                placeholder="e.g. MD/PhD"
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              />
+            )}
+          </div>
+          <button
+            onClick={saveCombinedProgram}
+            disabled={savingCombinedProgram}
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+          >
+            {savingCombinedProgram ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4">
         <h2 className="text-lg font-medium text-slate-900">Pros, cons & alignment</h2>

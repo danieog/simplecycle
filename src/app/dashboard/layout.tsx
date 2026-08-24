@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCycle } from "@/lib/cycles";
-import type { Cycle } from "@/lib/types";
+import { formatDisplayName } from "@/lib/display-name";
+import type { Cycle, Profile } from "@/lib/types";
 import LogoutButton from "@/components/logout-button";
 import CycleSwitcher from "@/components/cycle-switcher";
 import DashboardNav from "@/components/dashboard-nav";
@@ -21,14 +22,18 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const { data: cyclesData } = await supabase
-    .from("cycles")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("cycle_start_date", { ascending: true });
+  const [{ data: cyclesData }, { data: profileData }] = await Promise.all([
+    supabase
+      .from("cycles")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("cycle_start_date", { ascending: true }),
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+  ]);
 
   const cycles = (cyclesData ?? []) as Cycle[];
   const defaultCycle = getActiveCycle(cycles);
+  const displayName = formatDisplayName((profileData as Profile | null)?.full_name);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -41,6 +46,9 @@ export default async function DashboardLayout({
             <DashboardNav defaultCycleId={defaultCycle?.id} />
           </div>
           <div className="flex items-center gap-3">
+            {displayName && (
+              <span className="text-sm text-slate-500">{displayName}</span>
+            )}
             {cycles.length > 0 && defaultCycle && (
               <CycleSwitcher cycles={cycles} defaultCycleId={defaultCycle.id} />
             )}
